@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Picture Frame</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+</head>
+<body>
+
+<div id="stage">
+  <img id="photo" alt="" hidden>
+  <video id="video" muted playsinline hidden></video>
+  <div id="message" hidden></div>
+</div>
+
+<div id="tooltip" hidden>
+  Space pause &nbsp;•&nbsp; &larr;/&rarr; previous/next &nbsp;•&nbsp; F fullscreen
+  &nbsp;•&nbsp; R orientation &nbsp;•&nbsp; M fit &nbsp;•&nbsp; C filler
+  &nbsp;•&nbsp; E settings &nbsp;•&nbsp; Esc leave fullscreen
+</div>
+
+<div id="start-overlay">
+  <h1>Picture Frame</h1>
+  <p id="start-hint">Choose the folder that holds your pictures and videos.</p>
+  <button id="resume-btn" hidden>Resume last folder</button>
+  <button id="pick-btn">Choose photos folder&hellip;</button>
+  <p class="small">Press <b>E</b> anytime for settings &nbsp;•&nbsp; move the mouse to see the controls</p>
+  <p id="start-error" class="error" hidden></p>
+  <input type="file" id="dir-input" webkitdirectory multiple hidden>
+</div>
+
+<dialog id="settings">
+  <form method="dialog" id="settings-form">
+    <h2>Settings</h2>
+    <div class="grid">
+      <label>Photos folder</label>
+      <div><span id="folder-name">(not chosen)</span>
+        <button type="button" id="change-folder">Change&hellip;</button></div>
+
+      <label for="f-display">Seconds per picture</label>
+      <input id="f-display" type="number" min="1" step="1">
+
+      <label for="f-rescan">Rescan folder every (seconds)</label>
+      <input id="f-rescan" type="number" min="1" step="1">
+
+      <label for="f-shuffle">Shuffle order</label>
+      <input id="f-shuffle" type="checkbox">
+
+      <label for="f-recursive">Include subfolders</label>
+      <input id="f-recursive" type="checkbox">
+
+      <label for="f-orientation">Orientation</label>
+      <select id="f-orientation">
+        <option value="landscape">landscape</option>
+        <option value="portrait">portrait</option>
+        <option value="portrait-flipped">portrait-flipped</option>
+      </select>
+
+      <label for="f-fit">Fit mode</label>
+      <select id="f-fit">
+        <option value="fit">fit (letterbox)</option>
+        <option value="fill">fill (crop to cover)</option>
+      </select>
+
+      <label for="f-bg">Filler color</label>
+      <select id="f-bg">
+        <option value="white">white</option>
+        <option value="black">black</option>
+      </select>
+
+      <label for="f-ext">Picture types</label>
+      <input id="f-ext" type="text">
+
+      <label for="f-vext">Video types</label>
+      <input id="f-vext" type="text">
+    </div>
+    <div class="buttons">
+      <button type="button" id="save-btn">Save</button>
+      <button type="button" id="cancel-btn">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
