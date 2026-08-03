@@ -683,8 +683,9 @@ async function startShow() {
   // dialog interrupted it — one click/tap anywhere brings it back. Installed
   // as an app, the window is already fullscreen, so no prompt is needed.
   setTimeout(() => {
-    const appFullscreen = matchMedia("(display-mode: fullscreen)").matches
-      || matchMedia("(display-mode: standalone)").matches;
+    // Only a real fullscreen display-mode counts — a standalone app window
+    // (Windows PWA) still has a title bar and benefits from the prompt.
+    const appFullscreen = matchMedia("(display-mode: fullscreen)").matches;
     if (!document.fullscreenElement && !appFullscreen) {
       toast("Click anywhere (or press F) to go fullscreen");
       const once = () => {
