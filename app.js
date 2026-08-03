@@ -15,7 +15,7 @@ const DEFAULTS = {
   recursive: true,
   orientation: "landscape",           // landscape | portrait | portrait-flipped
   fitMode: "fit",                     // fit | fill
-  background: "white",                // white | black
+  background: "white",                // white | black | auto (edge color) | blur (photo bg)
   extensions: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"],
   videoExtensions: [".mp4", ".m4v", ".webm", ".mov"],
 };
@@ -38,6 +38,7 @@ let currentItem = null;
 let wakeLock = null;
 
 const stage = document.getElementById("stage");
+const bgBlur = document.getElementById("bg-blur");
 const photo = document.getElementById("photo");
 const video = document.getElementById("video");
 const message = document.getElementById("message");
@@ -284,8 +285,100 @@ function showMessage(text) {
   photo.hidden = true;
   stopVideo();
   message.textContent = text;
-  message.style.color = settings.background === "white" ? "black" : "white";
+  message.style.color = bgTextColor;
   message.hidden = false;
+}
+
+/* ---------- auto filler color (sampled from the picture's edges) ---------- */
+
+let autoBgColor = "rgb(128, 128, 128)";
+let bgTextColor = "black";   // contrast color for on-screen messages
+
+function edgeColor(source) {
+  // Downscale to a tiny canvas and average the border pixels.
+  const size = 32;
+  const cv = document.createElement("canvas");
+  cv.width = size;
+  cv.height = size;
+  const ctx = cv.getContext("2d");
+  try {
+    ctx.drawImage(source, 0, 0, size, size);
+    const d = ctx.getImageData(0, 0, size, size).data;
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        if (x === 0 || y === 0 || x === size - 1 || y === size - 1) {
+          const i = (y * size + x) * 4;
+          r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
+        }
+      }
+    }
+    return `rgb(${Math.round(r / n)}, ${Math.round(g / n)}, ${Math.round(b / n)})`;
+  } catch {
+    return autoBgColor;   // unreadable frame: keep the previous color
+  }
+}
+
+function isLightColor(color) {
+  if (color === "white") return true;
+  if (color === "black") return false;
+  const m = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!m) return true;
+  return 0.299 * +m[1] + 0.587 * +m[2] + 0.114 * +m[3] >= 140;
+}
+
+function applyBackground() {
+  const mode = settings.background;
+  const bg = mode === "auto" ? autoBgColor
+           : mode === "blur" ? "black"      // behind/around the blurred copy
+           : mode;
+  document.body.style.background = bg;
+  bgBlur.hidden = mode !== "blur" || !bgBlur.getAttribute("src");
+  bgTextColor = mode === "blur" ? "white" : (isLightColor(bg) ? "black" : "white");
+  if (!message.hidden) message.style.color = bgTextColor;
+}
+
+/* "blur" filler: a blurred copy of what's on screen fills the background. */
+let blurUrl = null;   // object URL of a captured video frame (photos reuse photo.src)
+
+function setBlurBackground(source) {
+  if (source === photo) {
+    bgBlur.src = photo.src;
+    bgBlur.hidden = false;
+    return;
+  }
+  // Video: capture the current frame at small size (it gets blurred anyway).
+  try {
+    const cv = document.createElement("canvas");
+    cv.width = 160;
+    cv.height = Math.max(1, Math.round(160 * source.videoHeight / source.videoWidth)) || 90;
+    cv.getContext("2d").drawImage(source, 0, 0, cv.width, cv.height);
+    cv.toBlob((b) => {
+      if (!b) return;
+      if (blurUrl) URL.revokeObjectURL(blurUrl);
+      blurUrl = URL.createObjectURL(b);
+      bgBlur.src = blurUrl;
+      bgBlur.hidden = false;
+    }, "image/jpeg", 0.7);
+  } catch {}
+}
+
+function currentMediaEl() {
+  if (!video.hidden && video.readyState >= 2) return video;
+  if (!photo.hidden && photo.naturalWidth) return photo;
+  return null;
+}
+
+/* Called whenever new media is on screen (or the filler mode changes). */
+function updateFillerForMedia(source) {
+  if (!source) return;
+  if (settings.background === "auto") {
+    autoBgColor = edgeColor(source);
+    applyBackground();
+  } else if (settings.background === "blur") {
+    setBlurBackground(source);
+    applyBackground();
+  }
 }
 
 /* If every file in the playlist fails in a row, say so on screen instead of
@@ -310,11 +403,17 @@ function mediaFailed() {
 }
 
 video.addEventListener("ended", () => { if (!paused) next(); });
-video.addEventListener("playing", () => { failStreak = 0; });
+video.addEventListener("playing", () => {
+  failStreak = 0;
+  updateFillerForMedia(video);
+});
 video.addEventListener("error", () => {
   if (started && !video.hidden) mediaFailed();
 });
-photo.addEventListener("load", () => { failStreak = 0; });
+photo.addEventListener("load", () => {
+  failStreak = 0;
+  updateFillerForMedia(photo);
+});
 photo.addEventListener("error", () => {
   if (started && !photo.hidden) {
     dlog(`IMAGE DECODE FAILED: ${currentItem ? currentItem.path : "?"}`);
@@ -340,15 +439,12 @@ function togglePause() {
 /* ---------- appearance ---------- */
 
 function applyAppearance() {
-  document.body.style.background = settings.background;
+  applyBackground();
   stage.classList.toggle("portrait", settings.orientation === "portrait");
   stage.classList.toggle("portrait-flipped", settings.orientation === "portrait-flipped");
   const fit = settings.fitMode === "fill" ? "cover" : "contain";
   photo.style.objectFit = fit;
   video.style.objectFit = fit;
-  if (!message.hidden) {
-    message.style.color = settings.background === "white" ? "black" : "white";
-  }
 }
 
 function cycleOrientation() {
@@ -365,9 +461,12 @@ function toggleFit() {
 }
 
 function toggleBackground() {
-  settings.background = settings.background === "white" ? "black" : "white";
+  const order = ["white", "black", "auto", "blur"];
+  settings.background = order[(order.indexOf(settings.background) + 1) % order.length];
+  updateFillerForMedia(currentMediaEl());   // take effect immediately
   applyAppearance();
   saveSettings();
+  if (started) toast(`Filler: ${settings.background}`, 2000);
 }
 
 /* ---------- fullscreen + wake lock (kiosk behavior) ---------- */

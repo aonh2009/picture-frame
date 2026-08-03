@@ -10,7 +10,10 @@ Same features as the Windows app:
   first**. Deleted files drop out automatically.
 - Plays videos (mp4/webm/mov, muted) to the end, then moves on.
 - Orientation (landscape / portrait / portrait-flipped), fit mode
-  (letterbox / crop-to-fill), white or black filler color.
+  (letterbox / crop-to-fill), filler: white, black, **auto** (samples the
+  edges of each picture and colors the bars to match), or **blur** (a
+  softly blurred copy of the picture fills the whole screen behind it,
+  like TV ambient modes).
 - Settings popup (`E`), controls tooltip on mouse move, mouse cursor
   auto-hides after 5 s.
 - **Kiosk behavior:** goes fullscreen on start and holds a *screen wake
@@ -78,7 +81,7 @@ right** anywhere on the picture to go to the next / previous one.
 | `F` | Toggle fullscreen |
 | `R` | Cycle orientation |
 | `M` | Toggle fit mode (fit ↔ fill) |
-| `C` | Toggle filler color (white ↔ black) |
+| `C` | Cycle filler (white → black → auto → blur) |
 | `E` | Settings popup |
 | `Esc` | Leave fullscreen |
 

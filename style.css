@@ -33,10 +33,22 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
 #stage.portrait-flipped  { transform: translate(-50%, -50%) rotate(90deg); }
 
 #photo, #video {
+  position: relative;  /* paints above the blurred background layer */
   width: 100%;
   height: 100%;
   object-fit: contain; /* "fit" mode; app.js switches to cover for "fill" */
   display: block;
+}
+
+/* Blurred copy of the current picture, filling the screen behind it
+ * ("blur" filler mode). Oversized so the blur has no faded edges. */
+#bg-blur {
+  position: absolute;
+  inset: -48px;
+  width: calc(100% + 96px);
+  height: calc(100% + 96px);
+  object-fit: cover;
+  filter: blur(36px) brightness(0.92);
 }
 
 #message {

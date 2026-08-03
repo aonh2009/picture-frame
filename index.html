@@ -6,13 +6,14 @@
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Picture Frame</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=4">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 </head>
 <body>
 
 <div id="stage">
+  <img id="bg-blur" alt="" hidden>
   <img id="photo" alt="" hidden>
   <video id="video" muted playsinline hidden></video>
   <div id="message" hidden></div>
@@ -83,6 +84,8 @@
       <select id="f-bg">
         <option value="white">white</option>
         <option value="black">black</option>
+        <option value="auto">auto (match picture)</option>
+        <option value="blur">blur (photo as background)</option>
       </select>
 
       <label for="f-ext">Picture types</label>
@@ -98,6 +101,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=2"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
