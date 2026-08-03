@@ -85,6 +85,25 @@ right** anywhere on the picture to go to the next / previous one.
 | `E` | Settings popup |
 | `Esc` | Leave fullscreen |
 
+## Zero-click start (recommended on the frame device)
+
+Two one-time choices make the frame start completely by itself — no Resume
+click, already fullscreen:
+
+1. **Persist the folder permission:** open the frame page, click *Choose
+   photos folder* / *Resume*, and when Chrome asks for access pick
+   **“Allow on every visit”** (not “Allow this time”). From then on the
+   app detects the standing permission at load and starts the show
+   immediately.
+2. **Install it as an app:** Chrome ⋮ menu → *Cast, save and share* →
+   **Install page as app** (wording varies; on ChromeOS it may just say
+   *Install Picture Frame*). Launched from its own icon, the app opens
+   **fullscreen automatically** — no F-key or click needed.
+
+Combined with ChromeOS **Settings → Apps → Restore apps on startup**, the
+Chromebook boots (after sign-in) straight into the running fullscreen
+slideshow.
+
 ## Start automatically after a reboot (simple kiosk)
 
 1. With `index.html` open, copy the address from Chrome's address bar.

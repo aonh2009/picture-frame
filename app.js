@@ -680,9 +680,12 @@ async function startShow() {
   restartRescanTimer();
 
   // If the browser dropped (or never granted) fullscreen — e.g. the folder
-  // dialog interrupted it — one click/tap anywhere brings it back.
+  // dialog interrupted it — one click/tap anywhere brings it back. Installed
+  // as an app, the window is already fullscreen, so no prompt is needed.
   setTimeout(() => {
-    if (!document.fullscreenElement) {
+    const appFullscreen = matchMedia("(display-mode: fullscreen)").matches
+      || matchMedia("(display-mode: standalone)").matches;
+    if (!document.fullscreenElement && !appFullscreen) {
       toast("Click anywhere (or press F) to go fullscreen");
       const once = () => {
         enterFullscreen();
@@ -691,6 +694,21 @@ async function startShow() {
       document.addEventListener("click", once);
     }
   }, 600);
+}
+
+/* If the browser remembered the folder permission ("Allow on every visit"),
+ * start the show with no interaction at all. */
+async function tryAutoResume(handle) {
+  try {
+    if ((await handle.queryPermission({ mode: "read" })) !== "granted") return false;
+  } catch {
+    return false;
+  }
+  dlog("folder permission persisted — starting automatically");
+  dirHandle = handle;
+  staticFiles = null;
+  startShow();
+  return true;
 }
 
 /* Any unexpected failure must be visible, not a silent blank screen. */
@@ -806,6 +824,7 @@ async function init() {
   if (LIVE_FOLDER_API) {
     const saved = await idbGet("dirHandle").catch(() => null);
     if (saved && saved.queryPermission) {
+      if (await tryAutoResume(saved)) return;   // permission persisted: no clicks
       const btn = document.getElementById("resume-btn");
       btn.hidden = false;
       btn.textContent = `Resume last folder (${saved.name})`;
@@ -830,4 +849,5 @@ window.__pf = {
   pickNext,
   setDirHandle(h) { dirHandle = h; },
   setStarted(v) { started = v; },
+  tryAutoResume,
 };
