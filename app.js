@@ -511,8 +511,17 @@ function toast(text, ms = 6000) {
   tooltipTimer = setTimeout(hideTooltip, ms);
 }
 
+let lastTouchTime = 0;   // browsers fire a synthetic mousemove after a tap
+
 document.addEventListener("mousemove", () => {
   showControls();
+  // Keyboard hints are for mouse users only — skip when this mousemove is
+  // just the echo of a touch.
+  if (started && overlay.hidden && Date.now() - lastTouchTime > 1000) {
+    tooltip.hidden = false;
+    clearTimeout(tooltipTimer);
+    tooltipTimer = setTimeout(hideTooltip, 5000);
+  }
   document.body.classList.remove("no-cursor");
   clearTimeout(cursorTimer);
   cursorTimer = setTimeout(() => document.body.classList.add("no-cursor"), 5000);
@@ -529,7 +538,10 @@ function showControls() {
   controlsTimer = setTimeout(() => { controls.hidden = true; }, 5000);
 }
 
-document.addEventListener("touchstart", showControls, { passive: true });
+document.addEventListener("touchstart", () => {
+  lastTouchTime = Date.now();
+  showControls();
+}, { passive: true });
 
 function updatePauseButton() {
   // ⏸ while playing, ▶ while paused
