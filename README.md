@@ -83,7 +83,7 @@ right** anywhere on the picture to go to the next / previous one.
 | `M` | Toggle fit mode (fit ↔ fill) |
 | `C` | Cycle filler (white → black → auto → blur) |
 | `E` | Settings popup |
-| `Esc` | Leave fullscreen |
+| `F11` | Leave (or enter) fullscreen |
 
 ## Zero-click start (recommended on the frame device)
 

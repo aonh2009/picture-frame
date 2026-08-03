@@ -477,9 +477,25 @@ function enterFullscreen() {
   }
 }
 
+/* The browser's own window fullscreen (F11, or Chrome's --start-fullscreen
+ * launch flag) is a different mechanism from the Fullscreen API, and pages
+ * are not allowed to turn it off. Detect it so we can say so instead of
+ * appearing broken. */
+function inWindowFullscreen() {
+  if (document.fullscreenElement) return false;          // page fullscreen
+  if (matchMedia("(display-mode: fullscreen)").matches) return true;
+  return Math.abs(window.innerHeight - screen.height) <= 2
+      && Math.abs(window.innerWidth - screen.width) <= 2;
+}
+
 function toggleFullscreen() {
-  if (document.fullscreenElement) document.exitFullscreen();
-  else enterFullscreen();
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else if (inWindowFullscreen()) {
+    toast("Already fullscreen — press F11 to leave it", 3000);
+  } else {
+    enterFullscreen();
+  }
 }
 
 async function requestWakeLock() {
@@ -504,11 +520,22 @@ function hideTooltip() {
   tooltip.innerHTML = TOOLTIP_HTML;   // clear any toast text
 }
 
+let toastUntil = 0;   // a toast owns the bar until this moment
+
 function toast(text, ms = 6000) {
   tooltip.textContent = text;
   tooltip.hidden = false;
+  toastUntil = Date.now() + ms;
   clearTimeout(tooltipTimer);
   tooltipTimer = setTimeout(hideTooltip, ms);
+}
+
+function showHints() {
+  if (Date.now() < toastUntil) return;   // don't clobber a live toast
+  tooltip.innerHTML = TOOLTIP_HTML;      // replace any stale toast text
+  tooltip.hidden = false;
+  clearTimeout(tooltipTimer);
+  tooltipTimer = setTimeout(hideTooltip, 5000);
 }
 
 let lastTouchTime = 0;   // browsers fire a synthetic mousemove after a tap
@@ -518,9 +545,7 @@ document.addEventListener("mousemove", () => {
   // Keyboard hints are for mouse users only — skip when this mousemove is
   // just the echo of a touch.
   if (started && overlay.hidden && Date.now() - lastTouchTime > 1000) {
-    tooltip.hidden = false;
-    clearTimeout(tooltipTimer);
-    tooltipTimer = setTimeout(hideTooltip, 5000);
+    showHints();
   }
   document.body.classList.remove("no-cursor");
   clearTimeout(cursorTimer);
@@ -668,6 +693,10 @@ document.addEventListener("keydown", (e) => {
     case "m": toggleFit(); break;
     case "c": toggleBackground(); break;
     case "e": e.preventDefault(); openSettings(); break;
+    case "escape":
+      // Esc exits page fullscreen natively; it cannot exit window fullscreen.
+      if (inWindowFullscreen()) toast("Press F11 to leave fullscreen", 3000);
+      break;
   }
 });
 
