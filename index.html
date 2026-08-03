@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Picture Frame</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 </head>
@@ -22,6 +22,18 @@
   Space pause &nbsp;•&nbsp; &larr;/&rarr; previous/next &nbsp;•&nbsp; F fullscreen
   &nbsp;•&nbsp; R orientation &nbsp;•&nbsp; M fit &nbsp;•&nbsp; C filler
   &nbsp;•&nbsp; E settings &nbsp;•&nbsp; Esc leave fullscreen
+</div>
+
+<div id="controls" hidden>
+  <button id="btn-prev" title="Previous" aria-label="Previous picture">&#9198;</button>
+  <button id="btn-pause" title="Pause / resume" aria-label="Pause or resume">&#9208;</button>
+  <button id="btn-next" title="Next" aria-label="Next picture">&#9197;</button>
+  <span class="ctl-sep"></span>
+  <button id="btn-full" title="Fullscreen" aria-label="Toggle fullscreen">&#x26F6;</button>
+  <button id="btn-orient" title="Rotate orientation" aria-label="Cycle orientation">&#x21BB;</button>
+  <button id="btn-fit" title="Fit / fill" aria-label="Toggle fit mode">&#x2922;</button>
+  <button id="btn-bg" title="White / black filler" aria-label="Toggle filler color">&#x25D0;</button>
+  <button id="btn-settings" title="Settings" aria-label="Open settings">&#9881;</button>
 </div>
 
 <div id="start-overlay">
@@ -86,6 +98,6 @@
   </form>
 </dialog>
 
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

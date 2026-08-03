@@ -62,6 +62,13 @@ itself. Two ways to get an address:
    origin, so all features work. (Keep the terminal running; it must be
    restarted after a reboot, or added to Linux autostart.)
 
+## Touch controls
+
+Tap the screen and a control bar appears at the bottom — big buttons for
+previous / pause / next, fullscreen, orientation, fit mode, filler color,
+and settings. It hides itself after 5 seconds. You can also **swipe left /
+right** anywhere on the picture to go to the next / previous one.
+
 ## Keys
 
 | Key | Action |

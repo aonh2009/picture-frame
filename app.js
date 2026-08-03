@@ -42,6 +42,7 @@ const photo = document.getElementById("photo");
 const video = document.getElementById("video");
 const message = document.getElementById("message");
 const tooltip = document.getElementById("tooltip");
+const controls = document.getElementById("controls");
 const overlay = document.getElementById("start-overlay");
 const dlg = document.getElementById("settings");
 
@@ -333,6 +334,7 @@ function togglePause() {
   } else {
     next();
   }
+  updatePauseButton();
 }
 
 /* ---------- appearance ---------- */
@@ -411,15 +413,66 @@ function toast(text, ms = 6000) {
 }
 
 document.addEventListener("mousemove", () => {
-  if (started && overlay.hidden) {
-    tooltip.hidden = false;
-    clearTimeout(tooltipTimer);
-    tooltipTimer = setTimeout(hideTooltip, 3000);
-  }
+  showControls();
   document.body.classList.remove("no-cursor");
   clearTimeout(cursorTimer);
   cursorTimer = setTimeout(() => document.body.classList.add("no-cursor"), 5000);
 });
+
+/* ---------- touch control bar ---------- */
+
+let controlsTimer = null;
+
+function showControls() {
+  if (!started || !overlay.hidden) return;
+  controls.hidden = false;
+  clearTimeout(controlsTimer);
+  controlsTimer = setTimeout(() => { controls.hidden = true; }, 5000);
+}
+
+document.addEventListener("touchstart", showControls, { passive: true });
+
+function updatePauseButton() {
+  // ⏸ while playing, ▶ while paused
+  document.getElementById("btn-pause").textContent = paused ? "▶" : "⏸";
+}
+
+const CONTROL_ACTIONS = {
+  "btn-prev": () => showPrevious(),
+  "btn-pause": () => togglePause(),
+  "btn-next": () => next(),
+  "btn-full": () => toggleFullscreen(),
+  "btn-orient": () => cycleOrientation(),
+  "btn-fit": () => toggleFit(),
+  "btn-bg": () => toggleBackground(),
+  "btn-settings": () => openSettings(),
+};
+for (const [id, action] of Object.entries(CONTROL_ACTIONS)) {
+  document.getElementById(id).addEventListener("click", () => {
+    action();
+    showControls();   // keep the bar up while it's being used
+  });
+}
+
+/* Swipe left/right anywhere on the picture = next/previous. */
+let swipeStart = null;
+
+stage.addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+  swipeStart = { x: t.clientX, y: t.clientY };
+}, { passive: true });
+
+stage.addEventListener("touchend", (e) => {
+  if (!swipeStart || !started) { swipeStart = null; return; }
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipeStart.x;
+  const dy = t.clientY - swipeStart.y;
+  swipeStart = null;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(dy)) {
+    if (dx < 0) next();
+    else showPrevious();
+  }
+}, { passive: true });
 
 /* ---------- settings dialog ---------- */
 
