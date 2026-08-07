@@ -103,9 +103,14 @@ connect, works offline.
 - `Q` or the ❝ button turns them on/off.
 - Settings (`E`) has **Show verses under pictures** and a text size
   (small / medium / large).
-- When the picture leaves a letterbox band, the verse sits in it using the
-  filler colour. When there's no band (fill/blur modes, or a tall photo),
-  it floats over the picture in white with a shadow so it stays readable.
+- When the picture leaves a letterbox band, the verse sits in it; otherwise
+  (fill/blur modes, or a tall photo) it floats over the picture.
+- **The verse colour is picked from the picture**: it takes the complement of
+  the photo's average colour — a deep blue photo gives warm gold text, a red
+  one gives pale cyan — then shifts that shade lighter or darker until it
+  clearly stands out from whatever is behind the text (a 4.5:1 contrast
+  minimum, the accessibility threshold). A soft halo in the opposite tone
+  keeps the edges crisp over busy photos.
 
 The verses are set in **Cormorant Garamond**, self-hosted in `fonts/` (the
 page's security policy only allows same-origin resources, so a Google Fonts

@@ -110,7 +110,7 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
   left: 50%;
   bottom: 0;                 /* app.js positions it in the free band */
   transform: translateX(-50%);
-  width: min(90%, 1150px);
+  width: min(92%, 1400px);
   text-align: center;
   padding: 6px 20px;
   z-index: 5;
@@ -130,12 +130,12 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
   font-size: 0.72em;
 }
 
-/* Sizes (settings) — vmin keeps them sane on any screen. Scaled up ~15%
- * because Cormorant Garamond has a small x-height and reads smaller than
- * most serifs at the same pixel size. */
-#quote.size-small  { font-size: clamp(14px, 2.2vmin, 24px); }
-#quote.size-medium { font-size: clamp(16px, 2.8vmin, 31px); }
-#quote.size-large  { font-size: clamp(19px, 3.6vmin, 39px); }
+/* Sizes (settings) — vmin keeps them sane on any screen. Generous, because
+ * Cormorant Garamond has a small x-height and the frame is read from across
+ * a room. */
+#quote.size-small  { font-size: clamp(17px, 2.9vmin, 32px); }
+#quote.size-medium { font-size: clamp(21px, 3.7vmin, 42px); }
+#quote.size-large  { font-size: clamp(26px, 4.8vmin, 56px); }
 
 /* No letterbox band to sit in (fill/blur modes): float over the picture
  * with a shadow so it stays readable on any image. */
