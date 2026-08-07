@@ -72,6 +72,50 @@ previous / pause / next, fullscreen, orientation, fit mode, filler color,
 and settings. It hides itself after 5 seconds. You can also **swipe left /
 right** anywhere on the picture to go to the next / previous one.
 
+## iPad / iPhone
+
+Safari has no folder access at all (the folder APIs are Chromium-only), so
+on Apple devices the frame asks you to pick the **pictures** instead of a
+folder:
+
+1. Open `https://frame.aonhassan.com` in Safari.
+2. Tap **Choose pictures…**, then **Select All** in the picker (Photos or
+   Files both work). HEIC photos are supported.
+3. The slideshow starts; tap once to go fullscreen.
+
+For a proper frame, add it to the Home Screen — **Share → Add to Home
+Screen**. Launched from that icon it runs without any Safari toolbars.
+Pair it with **Settings → Accessibility → Guided Access** to lock the iPad
+into the frame, and **Settings → Display & Brightness → Auto-Lock: Never**
+so the screen stays on.
+
+Limitation: iOS cannot remember the selection between launches, so the
+pictures must be chosen again each time the app is reopened, and newly
+added pictures appear only after choosing again. Chromebooks and Windows
+(Chrome) keep the folder and detect new pictures automatically.
+
+## Verses under the pictures
+
+A verse appears in the filler area beneath each picture, changing with every
+slide. The 33 verses are **built into the app** (`quotes.js`) — nothing to
+connect, works offline.
+
+- `Q` or the ❝ button turns them on/off.
+- Settings (`E`) has **Show verses under pictures** and a text size
+  (small / medium / large).
+- When the picture leaves a letterbox band, the verse sits in it using the
+  filler colour. When there's no band (fill/blur modes, or a tall photo),
+  it floats over the picture in white with a shadow so it stays readable.
+
+The verses are set in **Cormorant Garamond**, self-hosted in `fonts/` (the
+page's security policy only allows same-origin resources, so a Google Fonts
+link would be blocked — and self-hosting keeps the frame working offline).
+Licence: SIL Open Font License 1.1, included as `fonts/OFL.txt`.
+
+To change the list, edit `quotes.js` — each entry is `{ text, ref }`. The
+full 76-verse source list (with the ones that were too long or read as
+fragments) lives in the `picture-frame-quotes` folder as a spreadsheet.
+
 ## Keys
 
 | Key | Action |
@@ -82,6 +126,7 @@ right** anywhere on the picture to go to the next / previous one.
 | `R` | Cycle orientation |
 | `M` | Toggle fit mode (fit ↔ fill) |
 | `C` | Cycle filler (white → black → auto → blur) |
+| `Q` | Show / hide verses |
 | `E` | Settings popup |
 | `F11` | Leave (or enter) fullscreen |
 

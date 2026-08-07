@@ -1,8 +1,12 @@
 /* Minimal offline cache so the app keeps working without a network
  * connection once it has been loaded/installed. */
-const CACHE = "picture-frame-v1";
-const FILES = ["./", "./index.html", "./style.css", "./app.js",
-               "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CACHE = "picture-frame-v3";
+const FILES = ["./", "./index.html", "./style.css", "./app.js", "./quotes.js",
+               "./manifest.json", "./icon-192.png", "./icon-512.png",
+               "./fonts/cormorant-garamond-latin.woff2",
+               "./fonts/cormorant-garamond-latin-ext.woff2",
+               "./fonts/cormorant-garamond-italic-latin.woff2",
+               "./fonts/cormorant-garamond-italic-latin-ext.woff2"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)));

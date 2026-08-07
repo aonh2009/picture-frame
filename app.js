@@ -16,6 +16,8 @@ const DEFAULTS = {
   orientation: "landscape",           // landscape | portrait | portrait-flipped
   fitMode: "fit",                     // fit | fill
   background: "white",                // white | black | auto (edge color) | blur (photo bg)
+  showQuotes: true,                   // verses under the picture
+  quoteSize: "medium",                // small | medium | large
   // .heic/.heif are Apple's photo format — Safari shows them, Chrome can't
   // (those are skipped automatically on other devices).
   extensions: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".heif"],
@@ -55,6 +57,9 @@ const bgBlur = document.getElementById("bg-blur");
 const photo = document.getElementById("photo");
 const video = document.getElementById("video");
 const message = document.getElementById("message");
+const quoteEl = document.getElementById("quote");
+const quoteTextEl = document.getElementById("quote-text");
+const quoteRefEl = document.getElementById("quote-ref");
 const tooltip = document.getElementById("tooltip");
 const controls = document.getElementById("controls");
 const overlay = document.getElementById("start-overlay");
@@ -279,6 +284,8 @@ async function showItem(item, { record = true } = {}) {
     advanceTimer = setTimeout(next, settings.displaySeconds * 1000);
   }
 
+  showQuoteForCurrent();
+
   if (record) {
     history.push(item);
     if (history.length > 50) history.shift();
@@ -296,6 +303,7 @@ function stopVideo() {
 
 function showMessage(text) {
   photo.hidden = true;
+  quoteEl.hidden = true;
   stopVideo();
   message.textContent = text;
   message.style.color = bgTextColor;
@@ -419,6 +427,7 @@ video.addEventListener("ended", () => { if (!paused) next(); });
 video.addEventListener("playing", () => {
   failStreak = 0;
   updateFillerForMedia(video);
+  layoutQuote();
 });
 video.addEventListener("error", () => {
   if (started && !video.hidden) mediaFailed();
@@ -426,6 +435,7 @@ video.addEventListener("error", () => {
 photo.addEventListener("load", () => {
   failStreak = 0;
   updateFillerForMedia(photo);
+  layoutQuote();   // natural size is known now
 });
 photo.addEventListener("error", () => {
   if (started && !photo.hidden) {
@@ -449,6 +459,70 @@ function togglePause() {
   updatePauseButton();
 }
 
+/* ---------- verses under the picture ---------- */
+
+/* Embedded by quotes.js so the frame works with no network and no
+ * spreadsheet attached. Each entry is { text, ref }. */
+const QUOTES = Array.isArray(window.PF_QUOTES) ? window.PF_QUOTES : [];
+const quoteOrder = QUOTES.map((_, i) => i);
+shuffleArray(quoteOrder);
+let quotePos = 0;
+
+function showQuoteForCurrent() {
+  if (!settings.showQuotes || !quoteOrder.length) {
+    quoteEl.hidden = true;
+    return;
+  }
+  const q = QUOTES[quoteOrder[quotePos % quoteOrder.length]];
+  quotePos++;
+  quoteTextEl.textContent = `“${q.text}”`;
+  quoteRefEl.textContent = q.ref;
+  quoteEl.classList.remove("size-small", "size-medium", "size-large");
+  quoteEl.classList.add(`size-${settings.quoteSize || "medium"}`);
+  quoteEl.hidden = false;
+  layoutQuote();
+}
+
+/* Put the verse in the empty letterbox band under the picture when there is
+ * one; otherwise float it over the image with a shadow. */
+function layoutQuote() {
+  if (quoteEl.hidden) return;
+  const el = !video.hidden ? video : photo;
+  const boxW = el.offsetWidth || stage.offsetWidth;
+  const boxH = el.offsetHeight || stage.offsetHeight;
+  const nw = (el === video ? el.videoWidth : el.naturalWidth) || 0;
+  const nh = (el === video ? el.videoHeight : el.naturalHeight) || 0;
+
+  let band = 0;   // free space below the picture
+  if (nw && nh && settings.fitMode === "fit") {
+    const scale = Math.min(boxW / nw, boxH / nh);
+    band = Math.max(0, (boxH - nh * scale) / 2);
+  }
+
+  const qh = quoteEl.offsetHeight;
+  // Sit above the touch control bar while it is on screen.
+  const lift = controls.hidden ? 0 : controls.offsetHeight + 16;
+  const avail = Math.max(0, band - lift);
+
+  // In blur mode the "band" shows the blurred photo, so treat it as image.
+  const overImage = settings.background === "blur" || avail < qh + 14;
+  quoteEl.classList.toggle("over-image", overImage);
+  quoteEl.style.color = overImage ? "" : bgTextColor;
+  quoteEl.style.bottom = overImage
+    ? `${Math.round(boxH * 0.035) + lift}px`
+    : `${Math.max(6, Math.round((avail - qh) / 2)) + lift}px`;
+}
+
+function toggleQuotes() {
+  settings.showQuotes = !settings.showQuotes;
+  saveSettings();
+  if (settings.showQuotes) showQuoteForCurrent();
+  else quoteEl.hidden = true;
+  if (started) toast(settings.showQuotes ? "Verses on" : "Verses off", 2000);
+}
+
+window.addEventListener("resize", layoutQuote);
+
 /* ---------- appearance ---------- */
 
 function applyAppearance() {
@@ -458,6 +532,7 @@ function applyAppearance() {
   const fit = settings.fitMode === "fill" ? "cover" : "contain";
   photo.style.objectFit = fit;
   video.style.objectFit = fit;
+  layoutQuote();
 }
 
 function cycleOrientation() {
@@ -599,8 +674,12 @@ let controlsTimer = null;
 function showControls() {
   if (!started || !overlay.hidden) return;
   controls.hidden = false;
+  layoutQuote();                       // lift the verse clear of the bar
   clearTimeout(controlsTimer);
-  controlsTimer = setTimeout(() => { controls.hidden = true; }, 5000);
+  controlsTimer = setTimeout(() => {
+    controls.hidden = true;
+    layoutQuote();                     // and drop it back
+  }, 5000);
 }
 
 document.addEventListener("touchstart", () => {
@@ -621,6 +700,7 @@ const CONTROL_ACTIONS = {
   "btn-orient": () => cycleOrientation(),
   "btn-fit": () => toggleFit(),
   "btn-bg": () => toggleBackground(),
+  "btn-quote": () => toggleQuotes(),
   "btn-settings": () => openSettings(),
 };
 for (const [id, action] of Object.entries(CONTROL_ACTIONS)) {
@@ -661,6 +741,8 @@ function openSettings() {
   document.getElementById("f-orientation").value = settings.orientation;
   document.getElementById("f-fit").value = settings.fitMode;
   document.getElementById("f-bg").value = settings.background;
+  document.getElementById("f-quotes").checked = settings.showQuotes !== false;
+  document.getElementById("f-quote-size").value = settings.quoteSize || "medium";
   document.getElementById("f-ext").value = settings.extensions.join(" ");
   document.getElementById("f-vext").value = settings.videoExtensions.join(" ");
   dlg.showModal();
@@ -696,10 +778,14 @@ document.getElementById("save-btn").addEventListener("click", async () => {
   settings.orientation = document.getElementById("f-orientation").value;
   settings.fitMode = document.getElementById("f-fit").value;
   settings.background = document.getElementById("f-bg").value;
+  settings.showQuotes = document.getElementById("f-quotes").checked;
+  settings.quoteSize = document.getElementById("f-quote-size").value;
   settings.extensions = parseExtensions(document.getElementById("f-ext").value);
   settings.videoExtensions = parseExtensions(document.getElementById("f-vext").value);
   saveSettings();
   applyAppearance();
+  if (settings.showQuotes) showQuoteForCurrent();
+  else quoteEl.hidden = true;
   dlg.close();
 
   if (started) {
@@ -732,6 +818,7 @@ document.addEventListener("keydown", (e) => {
     case "r": cycleOrientation(); break;
     case "m": toggleFit(); break;
     case "c": toggleBackground(); break;
+    case "q": toggleQuotes(); break;
     case "e": e.preventDefault(); openSettings(); break;
     case "escape":
       // Esc exits page fullscreen natively; it cannot exit window fullscreen.
