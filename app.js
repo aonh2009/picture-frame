@@ -834,7 +834,9 @@ async function startShow() {
   dlog("starting show, scanning folder…");
   overlay.hidden = true;
   started = true;
-  enterFullscreen();
+  // No automatic fullscreen: on iOS a fullscreen request made during the same
+  // tap swallows the file picker. Use F / the ⛶ button, or launch the frame
+  // as an installed app (or via the Windows shortcut) to start fullscreen.
   requestWakeLock();
   showMessage("Loading pictures…");
   await scan(true);
@@ -847,27 +849,6 @@ async function startShow() {
   }
   next();
   restartRescanTimer();
-
-  // If the browser dropped (or never granted) fullscreen — e.g. the folder
-  // dialog interrupted it — one click/tap anywhere brings it back. Installed
-  // as an app, the window is already fullscreen, so no prompt is needed.
-  setTimeout(() => {
-    // Only a real fullscreen display-mode counts — a standalone app window
-    // (Windows PWA) still has a title bar and benefits from the prompt.
-    // Don't nag where fullscreen is impossible (iPhone) or already implied
-    // (iOS home-screen app).
-    const appFullscreen = matchMedia("(display-mode: fullscreen)").matches
-      || navigator.standalone === true;
-    if (!fullscreenElement() && !appFullscreen && fullscreenSupported()) {
-      toast(IS_IOS ? "Tap anywhere to go fullscreen"
-                   : "Click anywhere (or press F) to go fullscreen");
-      const once = () => {
-        enterFullscreen();
-        document.removeEventListener("click", once);
-      };
-      document.addEventListener("click", once);
-    }
-  }, 600);
 }
 
 /* If the browser remembered the folder permission ("Allow on every visit"),
@@ -938,9 +919,6 @@ async function pickDirectory() {
 
 document.getElementById("pick-btn").addEventListener("click", async () => {
   dlog("choose-folder clicked");
-  // Claim fullscreen with this click's gesture — the folder dialog's own
-  // interaction doesn't count as one, so waiting until after picking fails.
-  enterFullscreen();
   const handle = await pickDirectory();
   if (handle === "fallback" || !handle) return;
   dlog(`live folder granted: ${handle.name}`);
@@ -988,12 +966,10 @@ document.getElementById("files-input").addEventListener("change", (e) => {
 });
 
 document.getElementById("pick-files-btn").addEventListener("click", () => {
-  enterFullscreen();   // claim the gesture while we have it
   document.getElementById("files-input").click();
 });
 
 document.getElementById("resume-btn").addEventListener("click", async () => {
-  enterFullscreen();
   const saved = await idbGet("dirHandle").catch(() => null);
   if (!saved) return;
   let perm = await saved.queryPermission({ mode: "read" });

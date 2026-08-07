@@ -120,12 +120,13 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
   font-weight: 500;      /* Cormorant is light; 500 reads better at distance */
   line-height: 1.4;
 
-  /* Frosted white glass */
+  /* Frosted white glass — lighter tint, stronger blur so the text still
+   * reads cleanly through it. */
   color: #111;
-  background: rgba(255, 255, 255, 0.58);
-  -webkit-backdrop-filter: blur(16px) saturate(130%);
-  backdrop-filter: blur(16px) saturate(130%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.40);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
 }

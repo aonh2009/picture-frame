@@ -16,8 +16,10 @@ Same features as the Windows app:
   like TV ambient modes).
 - Settings popup (`E`), controls tooltip on mouse move, mouse cursor
   auto-hides after 5 s.
-- **Kiosk behavior:** goes fullscreen on start and holds a *screen wake
-  lock* so the display never sleeps while the frame is running.
+- **Kiosk behavior:** holds a *screen wake lock* so the display never sleeps
+  while the frame is running. Fullscreen is never forced — press `F` or the
+  ⛶ button, or launch it as an installed app / via the Windows shortcut and
+  it opens fullscreen by itself.
 
 ## Get it onto the Chromebook
 
