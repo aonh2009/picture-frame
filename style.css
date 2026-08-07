@@ -21,6 +21,10 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
   top: 0; left: 0;
   width: 100vw;
   height: 100vh;
+  /* iOS Safari: 100vh spills under the toolbars — dvh is the real viewport.
+   * Browsers without dvh keep the vh values above. */
+  width: 100dvw;
+  height: 100dvh;
 }
 
 /* Physically rotated monitor: rotate the stage and swap its dimensions. */
@@ -28,6 +32,8 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
   top: 50%; left: 50%;
   width: 100vh;
   height: 100vw;
+  width: 100dvh;
+  height: 100dvw;
 }
 #stage.portrait          { transform: translate(-50%, -50%) rotate(-90deg); }
 #stage.portrait-flipped  { transform: translate(-50%, -50%) rotate(90deg); }
@@ -152,6 +158,8 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
 #start-overlay button:hover { background: #2f5cd8; }
 #start-overlay #resume-btn { background: #2e9e5b; }
 #start-overlay #resume-btn:hover { background: #268a4e; }
+#start-overlay button.secondary { background: #3c4250; }
+#start-overlay button.secondary:hover { background: #4a5162; }
 #start-overlay .small { color: #999; font-size: 0.9rem; }
 #start-overlay .error { color: #ff7b6b; max-width: 420px; }
 

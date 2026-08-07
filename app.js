@@ -16,9 +16,22 @@ const DEFAULTS = {
   orientation: "landscape",           // landscape | portrait | portrait-flipped
   fitMode: "fit",                     // fit | fill
   background: "white",                // white | black | auto (edge color) | blur (photo bg)
-  extensions: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"],
+  // .heic/.heif are Apple's photo format — Safari shows them, Chrome can't
+  // (those are skipped automatically on other devices).
+  extensions: [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".heif"],
   videoExtensions: [".mp4", ".m4v", ".webm", ".mov"],
 };
+
+/* iPhone/iPad report as "MacIntel" with touch points in desktop-mode Safari. */
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+/* Folder picking needs Chromium's showDirectoryPicker or a working
+ * <input webkitdirectory>. iOS supports neither, so those devices get the
+ * multi-file picker instead. */
+const CAN_PICK_FOLDER = !IS_IOS
+  && (typeof window.showDirectoryPicker === "function"
+      || "webkitdirectory" in document.createElement("input"));
 
 let settings = loadSettings();
 let dirHandle = null;      // FileSystemDirectoryHandle of the photos folder
@@ -471,10 +484,36 @@ function toggleBackground() {
 
 /* ---------- fullscreen + wake lock (kiosk behavior) ---------- */
 
+/* Safari uses webkit-prefixed fullscreen, and iPhones have no element
+ * fullscreen at all — so every call is guarded. An unguarded
+ * requestFullscreen() would throw and abort startup on those devices. */
+function fullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+function fullscreenSupported() {
+  const el = document.documentElement;
+  return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+}
+
 function enterFullscreen() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {});
-  }
+  if (fullscreenElement()) return;
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  try {
+    const p = req.call(el);
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {}
+}
+
+function exitFullscreen() {
+  const ex = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!ex) return;
+  try {
+    const p = ex.call(document);
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {}
 }
 
 /* The browser's own window fullscreen (F11, or Chrome's --start-fullscreen
@@ -482,15 +521,16 @@ function enterFullscreen() {
  * are not allowed to turn it off. Detect it so we can say so instead of
  * appearing broken. */
 function inWindowFullscreen() {
-  if (document.fullscreenElement) return false;          // page fullscreen
+  if (fullscreenElement()) return false;                 // page fullscreen
   if (matchMedia("(display-mode: fullscreen)").matches) return true;
+  if (navigator.standalone === true) return true;        // iOS home-screen app
   return Math.abs(window.innerHeight - screen.height) <= 2
       && Math.abs(window.innerWidth - screen.width) <= 2;
 }
 
 function toggleFullscreen() {
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
+  if (fullscreenElement()) {
+    exitFullscreen();
   } else if (inWindowFullscreen()) {
     toast("Already fullscreen — press F11 to leave it", 3000);
   } else {
@@ -726,9 +766,13 @@ async function startShow() {
   setTimeout(() => {
     // Only a real fullscreen display-mode counts — a standalone app window
     // (Windows PWA) still has a title bar and benefits from the prompt.
-    const appFullscreen = matchMedia("(display-mode: fullscreen)").matches;
-    if (!document.fullscreenElement && !appFullscreen) {
-      toast("Click anywhere (or press F) to go fullscreen");
+    // Don't nag where fullscreen is impossible (iPhone) or already implied
+    // (iOS home-screen app).
+    const appFullscreen = matchMedia("(display-mode: fullscreen)").matches
+      || navigator.standalone === true;
+    if (!fullscreenElement() && !appFullscreen && fullscreenSupported()) {
+      toast(IS_IOS ? "Tap anywhere to go fullscreen"
+                   : "Click anywhere (or press F) to go fullscreen");
       const once = () => {
         enterFullscreen();
         document.removeEventListener("click", once);
@@ -781,6 +825,12 @@ const LIVE_FOLDER_API =
  * "fallback" when the classic <input webkitdirectory> dialog was opened
  * instead (its change event continues the flow). */
 async function pickDirectory() {
+  if (!CAN_PICK_FOLDER) {
+    // iOS: no folder support at all — pick the pictures themselves.
+    dlog("opening multi-file picker (no folder support on this device)");
+    document.getElementById("files-input").click();
+    return "fallback";
+  }
   if (!LIVE_FOLDER_API) {
     // Synchronously, inside the click's user gesture.
     dlog("opening classic folder dialog (snapshot mode)");
@@ -812,27 +862,46 @@ document.getElementById("pick-btn").addEventListener("click", async () => {
   startShow();
 });
 
-document.getElementById("dir-input").addEventListener("change", (e) => {
-  const files = [...e.target.files].filter(f => wantedExt(f.name));
-  dlog(`classic dialog returned ${e.target.files.length} file(s), ${files.length} usable`);
-  e.target.value = "";
+/* Shared by the folder dialog and the plain multi-file picker: both give a
+ * fixed snapshot of files (no live folder watching). */
+function handlePickedFiles(fileList, kind) {
+  const picked = [...fileList];
+  const files = picked.filter(f => wantedExt(f.name));
+  dlog(`${kind}: ${picked.length} file(s) chosen, ${files.length} usable`);
   if (!files.length) {
-    showStartError("That folder has no pictures or videos the frame can show.");
+    showStartError(picked.length
+      ? `None of those ${picked.length} file(s) are pictures or videos the frame can show.`
+      : "Nothing was selected.");
     return;
   }
   staticFiles = files;
   dirHandle = null;
-  const rootName = (files[0].webkitRelativePath || "").split("/")[0] || "chosen folder";
+  const label = (files[0].webkitRelativePath || "").split("/")[0]
+    || `${files.length} picture${files.length === 1 ? "" : "s"}`;
   if (dlg.open) {
     // Picked from the settings dialog: apply on Save.
     currentFolderChanged = true;
-    document.getElementById("folder-name").textContent = rootName;
+    document.getElementById("folder-name").textContent = label;
     return;
   }
   startShow();
-  toast("Folder loaded. Opened as a local file, so newly added pictures "
-      + "appear after re-choosing the folder — see the README for the "
-      + "full-features setup.", 8000);
+  toast("Pictures loaded. This device can't watch the folder for changes — "
+      + "choose again to pick up newly added pictures.", 7000);
+}
+
+document.getElementById("dir-input").addEventListener("change", (e) => {
+  handlePickedFiles(e.target.files, "folder dialog");
+  e.target.value = "";
+});
+
+document.getElementById("files-input").addEventListener("change", (e) => {
+  handlePickedFiles(e.target.files, "file picker");
+  e.target.value = "";
+});
+
+document.getElementById("pick-files-btn").addEventListener("click", () => {
+  enterFullscreen();   // claim the gesture while we have it
+  document.getElementById("files-input").click();
 });
 
 document.getElementById("resume-btn").addEventListener("click", async () => {
@@ -856,11 +925,13 @@ async function init() {
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
-  const probe = document.createElement("input");
-  if (!window.showDirectoryPicker && !("webkitdirectory" in probe)) {
-    showStartError("This browser cannot open folders — please use Chrome.");
-    document.getElementById("pick-btn").disabled = true;
-    return;
+  if (!CAN_PICK_FOLDER) {
+    // iPad/iPhone: no folder access exists, so offer the pictures themselves.
+    document.getElementById("pick-btn").hidden = true;
+    document.getElementById("pick-files-btn").hidden = false;
+    document.getElementById("start-hint").textContent =
+      "Choose the pictures and videos to show — tap below, then use Select All "
+      + "to take them all in one go.";
   }
   // A remembered folder only exists where the live folder API works.
   if (LIVE_FOLDER_API) {
