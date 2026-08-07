@@ -110,22 +110,33 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
   left: 50%;
   bottom: 0;                 /* app.js positions it in the free band */
   transform: translateX(-50%);
-  width: min(92%, 1400px);
+  width: max-content;        /* hug short verses, wrap long ones */
+  max-width: min(92%, 1400px);
   text-align: center;
-  padding: 6px 20px;
+  padding: 16px 32px;
   z-index: 5;
   pointer-events: none;
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-weight: 500;      /* Cormorant is light; 500 reads better at distance */
   line-height: 1.4;
+
+  /* Frosted white glass */
+  color: #111;
+  background: rgba(255, 255, 255, 0.58);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  backdrop-filter: blur(16px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
 }
 
 #quote-text { display: block; }
 
 #quote-ref {
   display: block;
-  margin-top: 6px;
-  opacity: 0.75;
+  margin-top: 8px;
+  color: #333;
+  opacity: 0.8;
   font-style: italic;
   font-size: 0.72em;
 }
@@ -137,11 +148,11 @@ body.no-cursor, body.no-cursor * { cursor: none !important; }
 #quote.size-medium { font-size: clamp(21px, 3.7vmin, 42px); }
 #quote.size-large  { font-size: clamp(26px, 4.8vmin, 56px); }
 
-/* No letterbox band to sit in (fill/blur modes): float over the picture
- * with a shadow so it stays readable on any image. */
+/* .over-image marks that there is no letterbox band to sit in (fill/blur
+ * modes, or a tall photo). The frosted panel reads on any backdrop, so this
+ * only affects where app.js places it — a touch more shadow for depth. */
 #quote.over-image {
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.55);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.32);
 }
 
 #message {

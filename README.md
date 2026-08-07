@@ -105,12 +105,10 @@ connect, works offline.
   (small / medium / large).
 - When the picture leaves a letterbox band, the verse sits in it; otherwise
   (fill/blur modes, or a tall photo) it floats over the picture.
-- **The verse colour is picked from the picture**: it takes the complement of
-  the photo's average colour — a deep blue photo gives warm gold text, a red
-  one gives pale cyan — then shifts that shade lighter or darker until it
-  clearly stands out from whatever is behind the text (a 4.5:1 contrast
-  minimum, the accessibility threshold). A soft halo in the opposite tone
-  keeps the edges crisp over busy photos.
+- The verse sits on a **frosted white glass panel** — translucent, blurring
+  whatever is behind it, with black text — so it reads clearly over any
+  picture without needing to change colour. The panel hugs short verses and
+  wraps long ones.
 
 The verses are set in **Cormorant Garamond**, self-hosted in `fonts/` (the
 page's security policy only allows same-origin resources, so a Google Fonts

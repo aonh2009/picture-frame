@@ -468,95 +468,6 @@ const quoteOrder = QUOTES.map((_, i) => i);
 shuffleArray(quoteOrder);
 let quotePos = 0;
 
-/* ---- verse colour: the picture's complement, forced to stay readable ---- */
-
-function averageColor(source, y0, y1) {
-  const size = 32;
-  const cv = document.createElement("canvas");
-  cv.width = size;
-  cv.height = size;
-  const ctx = cv.getContext("2d");
-  try {
-    const sw = source === video ? source.videoWidth : source.naturalWidth;
-    const sh = source === video ? source.videoHeight : source.naturalHeight;
-    if (!sw || !sh) return null;
-    const sy = Math.floor(sh * y0);
-    const sHeight = Math.max(1, Math.floor(sh * (y1 - y0)));
-    ctx.drawImage(source, 0, sy, sw, sHeight, 0, 0, size, size);
-    const d = ctx.getImageData(0, 0, size, size).data;
-    let r = 0, g = 0, b = 0, n = 0;
-    for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
-    return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
-  } catch {
-    return null;
-  }
-}
-
-function toRgb(color) {
-  if (color === "white") return [255, 255, 255];
-  if (color === "black") return [0, 0, 0];
-  const m = String(color).match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-  return m ? [+m[1], +m[2], +m[3]] : null;
-}
-
-function luminance([r, g, b]) {
-  const f = (v) => {
-    v /= 255;
-    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-}
-
-function contrastRatio(a, b) {
-  const la = luminance(a), lb = luminance(b);
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
-
-/* Complement of the picture, then pushed lighter or darker (keeping its hue)
- * until it clearly stands out from whatever is behind the text. */
-function readableComplement(picture, backdrop) {
-  const inverted = picture.map((v) => 255 - v);
-  if (contrastRatio(inverted, backdrop) >= 4.5) return inverted;
-
-  // Walk the complement toward black and toward white in step, and take the
-  // first shade that reads clearly — that keeps the hue as close to the true
-  // complement as legibility allows. Trying both directions matters: against
-  // a mid-grey picture, black wins where white is nearly invisible.
-  let best = inverted;
-  let bestRatio = contrastRatio(inverted, backdrop);
-  for (let step = 1; step <= 10; step++) {
-    const f = step / 10;
-    const darker = inverted.map((v) => Math.round(v * (1 - f)));
-    const lighter = inverted.map((v) => Math.round(v + (255 - v) * f));
-    for (const candidate of [darker, lighter]) {
-      const ratio = contrastRatio(candidate, backdrop);
-      if (ratio >= 4.5) return candidate;
-      if (ratio > bestRatio) { bestRatio = ratio; best = candidate; }
-    }
-  }
-  return best;
-}
-
-function applyQuoteColor(overImage) {
-  const el = !video.hidden ? video : photo;
-  const picture = averageColor(el, 0, 1) || [128, 128, 128];
-  // What actually sits behind the text: the picture itself when floating over
-  // it, otherwise the filler colour of the band.
-  const backdrop = overImage
-    ? (averageColor(el, 0.6, 1) || picture)
-    : (toRgb(settings.background === "auto" ? autoBgColor : settings.background)
-       || [255, 255, 255]);
-
-  const fg = readableComplement(picture, backdrop);
-  quoteEl.style.color = `rgb(${fg[0]}, ${fg[1]}, ${fg[2]})`;
-  // A halo in the opposite tone keeps edges crisp over a busy photo.
-  quoteEl.style.textShadow = overImage
-    ? (luminance(fg) < 0.5
-        ? "0 1px 3px rgba(255,255,255,0.85), 0 0 16px rgba(255,255,255,0.6)"
-        : "0 1px 3px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.6)")
-    : "none";
-}
-
 function showQuoteForCurrent() {
   if (!settings.showQuotes || !quoteOrder.length) {
     quoteEl.hidden = true;
@@ -594,9 +505,10 @@ function layoutQuote() {
   const avail = Math.max(0, band - lift);
 
   // In blur mode the "band" shows the blurred photo, so treat it as image.
+  // The frosted panel is legible on any backdrop, so this only decides where
+  // the verse sits — in the letterbox band, or floating over the picture.
   const overImage = settings.background === "blur" || avail < qh + 14;
   quoteEl.classList.toggle("over-image", overImage);
-  applyQuoteColor(overImage);
   quoteEl.style.bottom = overImage
     ? `${Math.round(boxH * 0.035) + lift}px`
     : `${Math.max(6, Math.round((avail - qh) / 2)) + lift}px`;
